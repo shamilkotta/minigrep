@@ -1,22 +1,20 @@
+use minigrep::search;
+use minigrep::search_case_insensitive;
 use std::env;
 use std::error::Error;
 use std::fs;
 use std::process;
-use minigrep::search;
-use minigrep::search_case_insensitive;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config = Config::build(&args).unwrap_or_else(|err| {
+    let config = Config::build(env::args()).unwrap_or_else(|err| {
         eprintln!("Parsing args failed: {err}");
         process::exit(1);
-    }); 
+    });
 
     if let Err(e) = run(config) {
         eprintln!("Application error: {e}");
         process::exit(1);
     }
-
 }
 
 struct Config {
@@ -26,20 +24,26 @@ struct Config {
 }
 
 impl Config {
-    fn build(args: &Vec<String>) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-          return Err("Please provide pattern and file path!!");
-        }
+    fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next();
 
-        let pattern = args[1].clone();
-        let file_path = args[2].clone();
+        let pattern = match args.next() {
+            Some(val) => val,
+            None => return Err("Please provide search pattern"),
+        };
+
+        let file_path = match args.next() {
+            Some(val) => val,
+            None => return Err("Please provide valid file path"),
+        };
+
         let ignore_case = env::var("IGNORE_CASE").is_ok();
 
         Ok(Config {
             pattern,
             file_path,
             ignore_case,
-        })    
+        })
     }
 }
 
@@ -57,5 +61,4 @@ fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-
 }
